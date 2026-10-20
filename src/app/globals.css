@@ -1,0 +1,222 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-sun: #f6b909; /* primary: buttons, cart chip, active tab */
+  --color-sun-deep: #efa703; /* hero rings + dots */
+  --color-shadow: #ffcc00; /* offset headline shadow */
+  --color-chili: #eb1c22; /* hero CTA, prices, script accents */
+  --color-ember: #d8350e; /* category blobs */
+  --color-ink: #232323;
+  --color-body: #646464; /* reference used #808080 (fails AA); darkened for contrast */
+  --color-cream: #fcf6ea;
+  --color-butter: #fef8e6;
+  --color-night: #1c1c1c;
+
+  --font-display: var(--font-bebas), 'Arial Narrow', sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+  --font-script: var(--font-script-face), cursive;
+
+  --ease-power3: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-out3: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-white font-sans text-[15px] leading-7 text-body antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    @apply font-display font-normal tracking-wide text-ink;
+  }
+  ::selection {
+    background: var(--color-sun);
+    color: var(--color-ink);
+  }
+}
+
+@layer components {
+  /* Stacked-copy headline: solid yellow offset behind black text */
+  .offset-shadow {
+    text-shadow: 0.05em 0.025em 0 var(--color-shadow);
+  }
+  .offset-shadow-red {
+    text-shadow: 0.04em 0.03em 0 var(--color-chili);
+  }
+
+  /* Thick yellow donut, the hero's signature shape */
+  .ring-shape {
+    @apply pointer-events-none absolute rounded-full;
+    border: var(--ring-w, 150px) solid var(--color-sun-deep);
+  }
+
+  .dot-grid {
+    background-image: radial-gradient(circle, rgb(255 255 255 / 0.95) 2.2px, transparent 2.6px);
+    background-size: 14px 14px;
+  }
+
+  .speckle {
+    background-color: var(--color-night);
+    background-image:
+      radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1.2px),
+      radial-gradient(rgb(246 185 9 / 0.22) 1px, transparent 1.2px);
+    background-size: 46px 46px, 83px 83px;
+    background-position: 0 0, 21px 37px;
+  }
+
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3 font-semibold transition duration-300;
+  @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink;
+}
+@utility btn-sun {
+  @apply btn bg-sun text-ink hover:bg-ink hover:text-sun;
+}
+@utility btn-chili {
+  @apply btn bg-chili text-white hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_rgb(235_28_34/0.6)];
+}
+@utility eyebrow-script {
+  @apply font-script leading-none text-chili;
+}
+@utility container-x {
+  @apply mx-auto w-full max-w-[1320px] px-4 sm:px-6 lg:px-8;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+/* ---------- Scroll reveals (only hide when JS is running, so no-JS still shows content) ---------- */
+[data-reveal] {
+  transform: rotate(var(--rot, 0deg));
+}
+.js [data-reveal] {
+  opacity: 0;
+  transition:
+    opacity 900ms var(--ease-out3),
+    transform 900ms var(--ease-out3);
+  transition-delay: var(--delay, 0ms);
+}
+.js [data-reveal='left'] {
+  transform: translate3d(-60px, 0, 0) rotate(var(--rot, 0deg));
+}
+.js [data-reveal='up'] {
+  transform: translate3d(0, 40px, 0) rotate(var(--rot, 0deg));
+}
+.js [data-reveal='zoom'] {
+  transform: scale(0.9) rotate(var(--rot, 0deg));
+}
+.js [data-reveal].is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) rotate(var(--rot, 0deg));
+}
+
+/* ---------- Hero slider ---------- */
+.hero-slide {
+  transition:
+    opacity 1000ms var(--ease-power3),
+    transform 1000ms var(--ease-power3),
+    visibility 0s linear 1000ms;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.85);
+}
+.hero-slide[data-state='active'] {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition-delay: 0s;
+}
+.hero-slide[data-state='leaving'] {
+  opacity: 0;
+  visibility: visible;
+  transform: translateX(40%);
+}
+
+/* layers inside a slide animate in each time the slide becomes active */
+.hero-layer {
+  opacity: 0;
+  transform: translate3d(var(--fx, 0), var(--fy, 0), 0);
+  transition:
+    opacity var(--dur, 1000ms) var(--ease-power3),
+    transform var(--dur, 1000ms) var(--ease-power3);
+  transition-delay: var(--delay, 0ms);
+}
+[data-state='active'] .hero-layer {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+/* first paint: play the entrance once even though the slide is server-rendered as active */
+@starting-style {
+  [data-state='active'] .hero-layer {
+    opacity: 0;
+    transform: translate3d(var(--fx, 0), var(--fy, 0), 0);
+  }
+}
+
+/* mouse parallax: --mx/--my are set on the hero (-1..1) */
+.parallax {
+  transform: translate3d(calc(var(--mx, 0) * var(--depth, 10px)), calc(var(--my, 0) * var(--depth, 10px)), 0);
+  transition: transform 900ms var(--ease-out3);
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes bob {
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes wobble {
+  50% {
+    transform: rotate(-8deg) scale(1.05);
+  }
+}
+.animate-spin-slow {
+  animation: spin-slow 80s linear infinite;
+}
+.animate-bob {
+  animation: bob 5s ease-in-out infinite;
+}
+.animate-wobble {
+  animation: wobble 3.5s ease-in-out infinite;
+}
+
+/* toast */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+}
+.toast-in {
+  animation: toast-in 350ms var(--ease-out3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
